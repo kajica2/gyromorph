@@ -2,13 +2,16 @@ import React, { useRef, useState } from 'react';
 import { SponsorFooter } from './SponsorFooter';
 
 interface ImageUploaderProps {
-  onImageSelect: (base64: string) => void;
+  onImageSelect: (base64: string, file?: File) => void;
   onVideoSelect?: (stream: MediaStream, base64Frame: string) => void;
   onAssetsSelect?: (modelUrl?: string, bgVideoUrl?: string, bgImgBase64?: string) => void;
+  onOpenLibrary?: () => void;
   isLoading: boolean;
+  user?: any; // Pass user object to show avatar/login state
+  onLoginClick?: () => void;
 }
 
-const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelect, onVideoSelect, onAssetsSelect, isLoading }) => {
+const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelect, onVideoSelect, onAssetsSelect, onOpenLibrary, isLoading, user, onLoginClick }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const glbInputRef = useRef<HTMLInputElement>(null);
   const bgVideoInputRef = useRef<HTMLInputElement>(null);
@@ -22,7 +25,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelect, onVideoSel
       const reader = new FileReader();
       reader.onloadend = () => {
         if (typeof reader.result === 'string') {
-          onImageSelect(reader.result);
+          onImageSelect(reader.result, file);
         }
       };
       reader.readAsDataURL(file);
@@ -119,6 +122,27 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelect, onVideoSel
       <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000 pointer-events-none"></div>
 
       <div className="flex-grow flex flex-col items-center justify-center p-6 z-10 overflow-y-auto">
+        {/* Auth Header */}
+        <div className="absolute top-6 right-6 z-50">
+          {user ? (
+            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-full pl-4 pr-2 py-1.5 border border-white/10">
+              <span className="text-xs font-medium text-white/80">
+                {user.email?.split('@')[0]}
+              </span>
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold">
+                {user.email?.[0].toUpperCase()}
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={onLoginClick}
+              className="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-md text-xs font-bold tracking-wider transition-all text-white"
+            >
+              LOGIN / SAVE
+            </button>
+          )}
+        </div>
+
         <div className="text-center space-y-6 max-w-md w-full pt-8">
           <div className="space-y-2">
             <h1 className="text-5xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-500">
@@ -161,18 +185,27 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelect, onVideoSel
 
                 {/* 2. Advanced: GLB & Video Background */}
                 <div className="grid grid-cols-2 gap-3">
-                   <button 
-                    onClick={triggerGLBInput}
-                    className="rounded-xl bg-purple-500/10 text-purple-200 font-medium py-3 border border-purple-500/30 hover:bg-purple-500/20 transition-all text-[10px] tracking-wider flex flex-col items-center justify-center gap-2 h-20"
-                   >
-                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 opacity-70">
-                       <path d="M12.378 1.602a.75.75 0 00-.756 0L3 6.632l9 5.25 9-5.25-8.622-5.03zM21.75 7.93l-9 5.25v9l8.628-5.032a.75.75 0 00.372-.648V7.93zM11.25 22.18v-9l-9-5.25v8.57a.75.75 0 00.372.648l8.628 5.033z" />
-                     </svg>
-                     3D CHARACTER (.GLB)
-                   </button>
+                   <div className="flex flex-col gap-2">
+                     <button 
+                      onClick={triggerGLBInput}
+                      className="flex-1 rounded-xl bg-purple-500/10 text-purple-200 font-medium py-3 border border-purple-500/30 hover:bg-purple-500/20 transition-all text-[10px] tracking-wider flex flex-col items-center justify-center gap-2"
+                     >
+                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 opacity-70">
+                         <path d="M12.378 1.602a.75.75 0 00-.756 0L3 6.632l9 5.25 9-5.25-8.622-5.03zM21.75 7.93l-9 5.25v9l8.628-5.032a.75.75 0 00.372-.648V7.93zM11.25 22.18v-9l-9-5.25v8.57a.75.75 0 00.372.648l8.628 5.033z" />
+                       </svg>
+                       UPLOAD .GLB
+                     </button>
+                     <button 
+                      onClick={onOpenLibrary}
+                      className="h-10 rounded-xl bg-purple-500/20 text-purple-200 font-medium border border-purple-500/30 hover:bg-purple-500/30 transition-all text-[10px] tracking-wider flex items-center justify-center gap-2"
+                     >
+                       <span>📚</span> LIBRARY
+                     </button>
+                   </div>
+                   
                    <button 
                     onClick={triggerBgVideoInput}
-                    className="rounded-xl bg-blue-500/10 text-blue-200 font-medium py-3 border border-blue-500/30 hover:bg-blue-500/20 transition-all text-[10px] tracking-wider flex flex-col items-center justify-center gap-2 h-20"
+                    className="rounded-xl bg-blue-500/10 text-blue-200 font-medium py-3 border border-blue-500/30 hover:bg-blue-500/20 transition-all text-[10px] tracking-wider flex flex-col items-center justify-center gap-2 h-full"
                    >
                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 opacity-70">
                        <path d="M4.5 4.5a3 3 0 00-3 3v9a3 3 0 003 3h8.25a3 3 0 003-3v-9a3 3 0 00-3-3H4.5zM19.94 18.75l-2.69-2.69V7.94l2.69-2.69c.944-.945 2.56-.276 2.56 1.06v11.38c0 1.336-1.616 2.005-2.56 1.06z" />

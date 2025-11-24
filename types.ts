@@ -20,3 +20,12 @@ export interface AnalysisResult {
   distortionType: 'liquid' | 'glitch' | 'pixelate' | 'warp';
   colorHex: string;
 }
+
+export interface Model3D {
+  id: string;
+  name: string;
+  url: string;
+  thumbnail_url?: string;
+  category?: string;
+  created_at?: string;
+}

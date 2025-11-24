@@ -1,17 +1,26 @@
 import React, { useState, useEffect } from 'react';
+import { User } from '@supabase/supabase-js';
 import ImageUploader from './components/ImageUploader';
 import DistortionView from './components/DistortionView';
+import { ModelLibrary } from './components/ModelLibrary';
+import { AuthOverlay } from './components/AuthOverlay';
 import { useGyroscope } from './hooks/useGyroscope';
 import { analyzeImage } from './services/geminiService';
+import { supabase, getCurrentUser, uploadUserFile } from './services/supabase';
 import { AnalysisResult } from './types';
 
 const App: React.FC = () => {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   
+  // Auth State
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+
   // New Assets
   const [modelSrc, setModelSrc] = useState<string | undefined>(undefined);
   const [bgVideoSrc, setBgVideoSrc] = useState<string | undefined>(undefined);
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
 
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
@@ -24,6 +33,13 @@ const App: React.FC = () => {
   const { data: gyroData, requestAccess, permissionGranted, isAutoMode } = useGyroscope();
 
   useEffect(() => {
+    // Auth Subscription
+    getCurrentUser().then(setUser);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) setIsAuthOpen(false);
+    });
+
     const storedOnboarded = localStorage.getItem('gyromorph_onboarded');
     const storedDifficulty = localStorage.getItem('gyromorph_difficulty');
     
@@ -33,6 +49,8 @@ const App: React.FC = () => {
     if (storedDifficulty) {
       setDifficultyMultiplier(parseFloat(storedDifficulty));
     }
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleAnalysis = async (base64Image: string) => {
@@ -56,8 +74,16 @@ const App: React.FC = () => {
     }
   }
 
-  const handleImageSelect = async (base64: string) => {
+  const handleImageSelect = async (base64: string, file?: File) => {
     setImageSrc(base64);
+
+    if (user && file) {
+      console.log('Uploading user file...');
+      uploadUserFile(file, user.id, 'images')
+        .then(url => console.log('File saved:', url))
+        .catch(err => console.error('Upload failed:', err));
+    }
+
     await handleAnalysis(base64);
   };
 
@@ -100,6 +126,12 @@ const App: React.FC = () => {
     setAnalysis(null);
     setModelSrc(undefined);
     setBgVideoSrc(undefined);
+    setIsLibraryOpen(false);
+  };
+
+  const handleLibrarySelect = (url: string) => {
+    handleAssetsSelect(url);
+    setIsLibraryOpen(false);
   };
 
   const handleOnboardingComplete = (calculatedDifficulty: number) => {
@@ -128,12 +160,23 @@ const App: React.FC = () => {
   }
 
   return (
-    <ImageUploader 
-      onImageSelect={handleImageSelect} 
-      onVideoSelect={handleVideoSelect}
-      onAssetsSelect={handleAssetsSelect}
-      isLoading={isAnalyzing}
-    />
+    <>
+      <AuthOverlay isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+      <ImageUploader 
+        onImageSelect={handleImageSelect} 
+        onVideoSelect={handleVideoSelect}
+        onAssetsSelect={handleAssetsSelect}
+        onOpenLibrary={() => setIsLibraryOpen(true)}
+        isLoading={isAnalyzing}
+        user={user}
+        onLoginClick={() => setIsAuthOpen(true)}
+      />
+      <ModelLibrary 
+        isOpen={isLibraryOpen}
+        onClose={() => setIsLibraryOpen(false)}
+        onSelect={handleLibrarySelect}
+      />
+    </>
   );
 };
 

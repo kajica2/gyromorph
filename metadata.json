@@ -1,0 +1,7 @@
+{
+  "name": "GyroMorph",
+  "description": "An interactive reality distorter. Upload a photo, and let AI spawn chaotic elements that react to your phone's movement.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

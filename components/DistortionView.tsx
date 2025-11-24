@@ -362,4 +362,158 @@ const DistortionView: React.FC<DistortionViewProps> = ({
                     tgt.matchedDuration += dt;
                     
                     // Trigger Logic
-                    if (tgt
+                    if (tgt.matchedDuration > 500 && !tgt.rewardClaimed) {
+                        tgt.rewardClaimed = true;
+                        tgt.timeLeft = 0;
+                        
+                        // Bonus points
+                        scoreRef.current += (100 * (currentCombo + 1));
+
+                        // Spawn new particles
+                        for(let k=0; k<3; k++) {
+                             newParticlesToAdd.push(createParticle(`bonus-${time}-${k}`, tgt.x, tgt.y));
+                        }
+
+                        if (isOnboarding) {
+                            onboardingStepRef.current++;
+                        }
+                    }
+                }
+            }
+        });
+
+        // Screen Bounds
+        if (x < 0) { x = 0; vx = -vx * 0.8; }
+        if (x > width - p.size) { x = width - p.size; vx = -vx * 0.8; }
+        if (y < 0) { y = 0; vy = -vy * 0.8; }
+        if (y > height - p.size) { y = height - p.size; vy = -vy * 0.8; }
+
+        p.x = x;
+        p.y = y;
+        p.vx = vx;
+        p.vy = vy;
+        return p;
+      });
+
+      return [...updatedParticles, ...newParticlesToAdd];
+    });
+
+    setObstacles([...obstaclesRef.current]);
+    setTargets([...targetsRef.current]);
+    setScore(Math.floor(scoreRef.current));
+    setCombo(currentCombo);
+
+    requestRef.current = requestAnimationFrame(animate);
+  };
+
+  useEffect(() => {
+    requestRef.current = requestAnimationFrame(animate);
+    return () => {
+        if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    };
+  }, [isOnboarding]); 
+
+  return (
+    <div ref={containerRef} className="relative w-full h-full overflow-hidden bg-black touch-none">
+        {/* Background Video Feed */}
+        <video 
+            ref={videoRef}
+            className="absolute top-0 left-0 w-full h-full object-cover opacity-60"
+            playsInline
+            muted
+        />
+        
+        {/* UI Layer */}
+        <div className="absolute top-4 left-4 z-50 text-white font-bold text-xl drop-shadow-md">
+            SCORE: {score} {combo > 1 && <span className="text-yellow-400 animate-pulse">x{combo}</span>}
+        </div>
+
+        {/* Onboarding Text */}
+        {isOnboarding && calibrationText && (
+             <div className="absolute top-20 left-0 w-full text-center z-50 pointer-events-none">
+                <div className="bg-black/60 text-cyan-400 inline-block px-4 py-2 rounded-lg text-lg font-mono animate-pulse border border-cyan-500/50">
+                    {calibrationText}
+                </div>
+             </div>
+        )}
+
+        <button 
+            onClick={onBack}
+            className="absolute top-4 right-4 z-50 bg-white/20 backdrop-blur-md p-2 rounded-full text-white hover:bg-white/40 transition-all"
+        >
+            ✕
+        </button>
+
+        {/* Game Elements Layer */}
+        <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
+            {/* Obstacles */}
+            {obstacles.map(obs => (
+                <circle 
+                    key={obs.id}
+                    cx={obs.x}
+                    cy={obs.y}
+                    r={obs.radius}
+                    fill="rgba(0,0,0,0.8)"
+                    stroke="rgba(255,50,50,0.5)"
+                    strokeWidth="2"
+                />
+            ))}
+
+            {/* Targets */}
+            {targets.map(tgt => {
+                 const progress = Math.min(1, tgt.matchedDuration / 1000);
+                 return (
+                    <g key={tgt.id}>
+                        {/* Timer Ring */}
+                        <circle 
+                            cx={tgt.x}
+                            cy={tgt.y}
+                            r={tgt.radius + 4}
+                            fill="none"
+                            stroke={isOnboarding ? "#00FFFF" : "#FFFF00"}
+                            strokeWidth="4"
+                            strokeDasharray={`${(tgt.timeLeft / tgt.maxTime) * (2 * Math.PI * (tgt.radius + 4))} 1000`}
+                            opacity="0.7"
+                        />
+                        {/* Success Fill */}
+                        <circle 
+                            cx={tgt.x}
+                            cy={tgt.y}
+                            r={tgt.radius * progress}
+                            fill={isOnboarding ? "rgba(0,255,255,0.3)" : "rgba(255,255,0,0.3)"}
+                        />
+                        <text 
+                            x={tgt.x} 
+                            y={tgt.y} 
+                            dy=".3em" 
+                            textAnchor="middle" 
+                            fontSize="40"
+                            fill="white"
+                        >
+                            {tgt.emoji}
+                        </text>
+                    </g>
+                 );
+            })}
+        </svg>
+
+        {/* Particles */}
+        {particles.map(p => (
+            <div
+                key={p.id}
+                className="absolute flex items-center justify-center text-4xl pointer-events-none transform transition-transform"
+                style={{
+                    left: p.x,
+                    top: p.y,
+                    width: p.size,
+                    height: p.size,
+                }}
+            >
+                {p.emoji}
+            </div>
+        ))}
+    </div>
+  );
+};
+
+export default DistortionView;

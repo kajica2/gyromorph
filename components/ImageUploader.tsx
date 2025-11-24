@@ -100,16 +100,26 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelect, onVideoSel
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-neutral-950 text-white p-6 relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute -top-20 -left-20 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-      <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+      {/* Main Background Image */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2670&auto=format&fit=crop" 
+          alt="Background" 
+          className="w-full h-full object-cover opacity-40"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/80 via-neutral-950/50 to-neutral-950/90"></div>
+      </div>
 
-      <div className="z-10 text-center space-y-8 max-w-md w-full">
+      {/* Background Effects - Kept for atmosphere */}
+      <div className="absolute -top-20 -left-20 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob z-0"></div>
+      <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000 z-0"></div>
+
+      <div className="z-10 text-center space-y-8 max-w-md w-full relative">
         <div className="space-y-2">
-          <h1 className="text-5xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-500">
+          <h1 className="text-5xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-500 drop-shadow-lg">
             GYRO<br/>MORPH
           </h1>
-          <p className="text-gray-400 font-light">
+          <p className="text-gray-300 font-light drop-shadow-md">
             Reality is subjective. <br/> Capture it, then break it.
           </p>
         </div>
@@ -138,7 +148,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelect, onVideoSel
 
               <div className="relative flex items-center py-1">
                 <div className="flex-grow border-t border-white/10"></div>
-                <span className="flex-shrink-0 mx-4 text-gray-600 text-[10px] font-bold tracking-widest">QUICK START</span>
+                <span className="flex-shrink-0 mx-4 text-gray-400 text-[10px] font-bold tracking-widest drop-shadow-sm">QUICK START</span>
                 <div className="flex-grow border-t border-white/10"></div>
               </div>
 
@@ -146,7 +156,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelect, onVideoSel
                 <button 
                   onClick={handleDemoSelect}
                   disabled={isDemoLoading}
-                  className="rounded-xl bg-white/5 text-white font-medium py-3 border border-white/10 hover:bg-white/10 transition-all text-[10px] tracking-wider flex flex-col items-center justify-center gap-2 hover:border-white/20 h-20"
+                  className="rounded-xl bg-white/5 text-white font-medium py-3 border border-white/10 hover:bg-white/10 transition-all text-[10px] tracking-wider flex flex-col items-center justify-center gap-2 hover:border-white/20 h-20 backdrop-blur-sm"
                 >
                   {isDemoLoading ? (
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
@@ -162,7 +172,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelect, onVideoSel
 
                 <button 
                   onClick={handleCameraStart}
-                  className="rounded-xl bg-white/5 text-white font-medium py-3 border border-white/10 hover:bg-white/10 transition-all text-[10px] tracking-wider flex flex-col items-center justify-center gap-2 hover:border-white/20 h-20"
+                  className="rounded-xl bg-white/5 text-white font-medium py-3 border border-white/10 hover:bg-white/10 transition-all text-[10px] tracking-wider flex flex-col items-center justify-center gap-2 hover:border-white/20 h-20 backdrop-blur-sm"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 opacity-70">
                       <path d="M4.5 4.5a3 3 0 00-3 3v9a3 3 0 003 3h8.25a3 3 0 003-3v-9a3 3 0 00-3-3H4.5zM19.94 18.75l-2.69-2.69V7.94l2.69-2.69c.944-.945 2.56-.276 2.56 1.06v11.38c0 1.336-1.616 2.005-2.56 1.06z" />
@@ -171,7 +181,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelect, onVideoSel
                 </button>
               </div>
 
-              <p className="text-xs text-gray-500 uppercase tracking-widest pt-2">
+              <p className="text-xs text-gray-400 uppercase tracking-widest pt-2">
                 Powered by Gemini 2.5 Flash
               </p>
             </div>

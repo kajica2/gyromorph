@@ -1,5 +1,5 @@
 import { createClient, User } from '@supabase/supabase-js';
-import { Model3D } from '../types';
+import { Asset, AssetType, Model3D } from '../types';
 
 // Fallback to provided keys if env vars are missing (for demo/dev purposes)
 // In production, ensure these are set in the Vercel dashboard.
@@ -19,23 +19,33 @@ export const supabase = createClient(
 );
 
 /*
-  REQUIRED SQL SCHEMA & STORAGE:
+  REQUIRED STORAGE + SCHEMA (run in Supabase SQL editor):
 
   1. Storage Buckets:
-     - 'models' (public): For shared 3D models
-     - 'user-content' (public/private): For user-specific uploads
-       Policy: users can insert/select own objects; public read if shared.
+     - 'assets' (public) for shared audio/video/3D/image files
+     - 'user-content' (private) for per-user uploads (optional)
 
-  2. Tables:
-     create table public.models (
+  2. Assets Table:
+     create table public.assets (
        id uuid default gen_random_uuid() primary key,
        name text not null,
        url text not null,
+       type text not null check (type in ('model','video','audio','image')),
        thumbnail_url text,
        category text,
-       created_at timestamptz default now(),
-       user_id uuid references auth.users(id)
+       size bigint,
+       created_at timestamptz default now()
      );
+
+     alter table public.assets enable row level security;
+
+     create policy "Public read assets"
+       on public.assets for select using (true);
+
+     -- replace with stricter policy in prod
+     create policy "Allow insert assets"
+       on public.assets for insert
+       with check (true);
 */
 
 // --- AUTH SERVICES ---
@@ -71,9 +81,9 @@ export const getCurrentUser = async (): Promise<User | null> => {
  * users/{user-id}/{content-type}/{file-id}
  */
 export const uploadUserFile = async (
-  file: File, 
-  userId: string, 
-  contentType: 'images' | 'videos' | 'models'
+  file: File,
+  userId: string,
+  contentType: 'images' | 'videos' | 'models' | 'audio'
 ): Promise<string | null> => {
   const fileExt = file.name.split('.').pop();
   // Generate unique filename
@@ -102,60 +112,85 @@ export const uploadUserFile = async (
   return publicUrl;
 };
 
-export const uploadModel = async (file: File): Promise<Model3D | null> => {
-  // 1. Upload file to Storage
+export const uploadAsset = async (file: File, type: AssetType): Promise<Asset | null> => {
   const fileExt = file.name.split('.').pop();
-  const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-  const filePath = `${fileName}`;
+  const fileName = `${type}s/${Math.random().toString(36).substring(2, 10)}_${Date.now()}.${fileExt}`;
 
   const { error: uploadError } = await supabase.storage
-    .from('models')
-    .upload(filePath, file);
+    .from('assets')
+    .upload(fileName, file);
 
   if (uploadError) {
-    console.error('Error uploading file:', uploadError);
+    console.error('Error uploading asset:', uploadError);
     alert(`Upload failed: ${uploadError.message}`);
     return null;
   }
 
-  // 2. Get Public URL
   const { data: { publicUrl } } = supabase.storage
-    .from('models')
-    .getPublicUrl(filePath);
+    .from('assets')
+    .getPublicUrl(fileName);
 
-  // 3. Save record to Database
   const { data, error: dbError } = await supabase
-    .from('models')
-    .insert([
-      {
-        name: file.name,
-        url: publicUrl,
-        category: 'User Upload',
-        // No thumbnail for now, maybe add a default one or generate later
-      }
-    ])
+    .from('assets')
+    .insert([{
+      name: file.name,
+      url: publicUrl,
+      type,
+      size: file.size,
+      category: 'User Upload'
+    }])
     .select()
     .single();
 
   if (dbError) {
-    console.error('Error saving model to database:', dbError);
+    console.error('Error saving asset:', dbError);
     alert(`Database save failed: ${dbError.message}`);
     return null;
   }
 
-  return data as Model3D;
+  return data as Asset;
 };
 
-export const fetchModels = async (): Promise<Model3D[]> => {
+export const fetchAssets = async (type?: AssetType): Promise<Asset[]> => {
+  let query = supabase
+    .from('assets')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (type) query = query.eq('type', type);
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching assets:', error);
+    // Fallback to legacy models table for backwards compatibility
+    if (!type || type === 'model') return fetchLegacyModels();
+    return [];
+  }
+
+  return data as Asset[];
+};
+
+const fetchLegacyModels = async (): Promise<Model3D[]> => {
   const { data, error } = await supabase
     .from('models')
     .select('*')
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching models:', error);
+    console.error('Error fetching legacy models:', error);
     return [];
   }
 
-  return data as Model3D[];
+  return data.map((entry: any) => ({ ...entry, type: 'model' })) as Model3D[];
+};
+
+export const fetchModels = async (): Promise<Model3D[]> => {
+  const assets = await fetchAssets('model');
+  return assets as Model3D[];
+};
+
+export const uploadModel = async (file: File): Promise<Model3D | null> => {
+  const uploaded = await uploadAsset(file, 'model');
+  return uploaded as Model3D | null;
 };

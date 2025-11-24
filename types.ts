@@ -21,11 +21,21 @@ export interface AnalysisResult {
   colorHex: string;
 }
 
-export interface Model3D {
+export type AssetType = 'model' | 'video' | 'audio' | 'image';
+
+export interface Asset {
   id: string;
   name: string;
   url: string;
+  type: AssetType;
   thumbnail_url?: string;
   category?: string;
   created_at?: string;
+  size?: number;
+  is_public?: boolean;
+}
+
+// Deprecated: Use Asset with type='model'
+export interface Model3D extends Asset {
+  type: 'model';
 }

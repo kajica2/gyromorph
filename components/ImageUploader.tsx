@@ -9,23 +9,28 @@ interface ImageUploaderProps {
   isLoading: boolean;
   user?: any; // Pass user object to show avatar/login state
   onLoginClick?: () => void;
+  themeColor?: string; // Optional: passed from analysis to colorize background
 }
 
-const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelect, onVideoSelect, onAssetsSelect, onOpenLibrary, isLoading, user, onLoginClick }) => {
+const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelect, onVideoSelect, onAssetsSelect, onOpenLibrary, isLoading, user, onLoginClick, themeColor }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const glbInputRef = useRef<HTMLInputElement>(null);
   const bgVideoInputRef = useRef<HTMLInputElement>(null);
   
   const [isDemoLoading, setIsDemoLoading] = useState(false);
+  const [isPublic, setIsPublic] = useState(true);
 
   // Handlers
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Pass isPublic state to handler or App
+      console.log("Shared globally:", isPublic);
+      
       const reader = new FileReader();
       reader.onloadend = () => {
         if (typeof reader.result === 'string') {
-          onImageSelect(reader.result, file);
+          onImageSelect(reader.result, file); // Note: App.tsx needs to handle isPublic from here or state
         }
       };
       reader.readAsDataURL(file);
@@ -116,10 +121,47 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelect, onVideoSel
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-neutral-950 text-white relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute -top-20 -left-20 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob pointer-events-none"></div>
-      <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000 pointer-events-none"></div>
+    <div 
+      className="flex flex-col min-h-screen text-white relative overflow-hidden transition-all duration-1000" 
+      style={{
+        background: themeColor 
+          ? `radial-gradient(ellipse at bottom, ${themeColor}30, #0a0a0a 60%, ${themeColor}15)`
+          : 'radial-gradient(ellipse at bottom, #8b5cf630, #0a0a0a 60%, #3b82f615)'
+      }}
+    >
+      {/* Background Effects - Spectrum Color Wheel */}
+      <div 
+        className="absolute -top-20 -left-20 w-80 h-80 rounded-full mix-blend-screen filter blur-[100px] opacity-40 pointer-events-none"
+        style={{ 
+          background: themeColor 
+            ? `radial-gradient(circle, ${themeColor}, ${themeColor}80)`
+            : 'conic-gradient(from 0deg, #ec4899, #8b5cf6, #3b82f6, #10b981, #f59e0b, #ec4899)',
+          animation: 'spin 20s linear infinite'
+        }}
+      ></div>
+      <div 
+        className="absolute -bottom-20 -right-20 w-96 h-96 rounded-full mix-blend-screen filter blur-[100px] opacity-30 pointer-events-none"
+        style={{ 
+          background: 'conic-gradient(from 180deg, #06b6d4, #8b5cf6, #ec4899, #f59e0b, #10b981, #06b6d4)',
+          animation: 'spin 25s linear infinite reverse'
+        }}
+      ></div>
+      <div 
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full mix-blend-screen filter blur-[150px] opacity-20 pointer-events-none"
+        style={{ 
+          background: themeColor 
+            ? `radial-gradient(circle, ${themeColor}60, transparent)`
+            : 'conic-gradient(from 90deg, #8b5cf6, #3b82f6, #10b981, #f59e0b, #ef4444, #ec4899, #8b5cf6)',
+          animation: 'spin 30s linear infinite'
+        }}
+      ></div>
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
 
       <div className="flex-grow flex flex-col items-center justify-center p-6 z-10 overflow-y-auto">
         {/* Auth Header */}
@@ -151,6 +193,22 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelect, onVideoSel
             <p className="text-gray-400 font-light">
               Reality is subjective. <br/> Capture it, layer it, break it.
             </p>
+          </div>
+
+          {/* Share Checkbox */}
+          <div className="flex items-center justify-center gap-2 pb-2">
+            <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-400 hover:text-white transition-colors">
+              <div className="relative">
+                <input 
+                  type="checkbox" 
+                  className="peer sr-only"
+                  checked={isPublic}
+                  onChange={(e) => setIsPublic(e.target.checked)}
+                />
+                <div className="w-9 h-5 bg-white/10 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+              </div>
+              <span>SHARE UPLOADS GLOBALLY</span>
+            </label>
           </div>
 
           <div className="p-6 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl">

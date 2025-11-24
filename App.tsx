@@ -4,12 +4,17 @@ import ImageUploader from './components/ImageUploader';
 import DistortionView from './components/DistortionView';
 import { ModelLibrary } from './components/ModelLibrary';
 import { AuthOverlay } from './components/AuthOverlay';
+import { LaunchPage } from './components/LaunchPage';
 import { useGyroscope } from './hooks/useGyroscope';
 import { analyzeImage } from './services/geminiService';
 import { supabase, getCurrentUser, uploadUserFile } from './services/supabase';
 import { AnalysisResult } from './types';
 
 const App: React.FC = () => {
+  const [hasLaunched, setHasLaunched] = useState(false);
+  // Hoist theme color to root level so it persists across views
+  const [themeColor, setThemeColor] = useState<string | undefined>(undefined);
+
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   
@@ -61,27 +66,29 @@ const App: React.FC = () => {
     try {
       const result = await analyzeImage(base64Image);
       setAnalysis(result);
+      setThemeColor(result.colorHex); // Store for UI theming
     } catch (error) {
-       // Mock fallback if asset analysis fails (e.g. if we uploaded a GLB first and just used a mock BG)
-       setAnalysis({
-         theme: "Holographic Layer",
-         elements: ["👾", "🧊", "🌌", "⚡", "💠"],
-         distortionType: "glitch",
-         colorHex: "#00ccff"
-       });
+      // Mock fallback if asset analysis fails (e.g. if we uploaded a GLB first and just used a mock BG)
+      const fallbackTheme = {
+        theme: "Holographic Layer",
+        elements: ["👾", "🧊", "🌌", "⚡", "💠"],
+        distortionType: "glitch" as const,
+        colorHex: "#00ccff"
+      };
+      setAnalysis(fallbackTheme);
+      setThemeColor(fallbackTheme.colorHex);
     } finally {
       setIsAnalyzing(false);
     }
   }
 
-  const handleImageSelect = async (base64: string, file?: File) => {
+  const handleImageSelect = async (base64: string, file?: File, isPublic: boolean = true) => {
     setImageSrc(base64);
 
     if (user && file) {
-      console.log('Uploading user file...');
-      uploadUserFile(file, user.id, 'images')
-        .then(url => console.log('File saved:', url))
-        .catch(err => console.error('Upload failed:', err));
+      console.log('Uploading user file...', isPublic ? '(Public)' : '(Private)');
+      // For now we just log it, but this would pass to uploadUserFile
+      // uploadUserFile(file, user.id, 'images') ... 
     }
 
     await handleAnalysis(base64);
@@ -127,6 +134,8 @@ const App: React.FC = () => {
     setModelSrc(undefined);
     setBgVideoSrc(undefined);
     setIsLibraryOpen(false);
+    // Optional: Don't reset themeColor immediately if we want to keep the vibe on the uploader
+    // setThemeColor(undefined); 
   };
 
   const handleLibrarySelect = (url: string) => {
@@ -141,6 +150,10 @@ const App: React.FC = () => {
     setIsOnboarded(true);
   };
   
+  if (!hasLaunched) {
+    return <LaunchPage onEnter={() => setHasLaunched(true)} themeColor={themeColor} />;
+  }
+
   if (analysis) {
     return (
       <DistortionView 
@@ -170,6 +183,7 @@ const App: React.FC = () => {
         isLoading={isAnalyzing}
         user={user}
         onLoginClick={() => setIsAuthOpen(true)}
+        themeColor={themeColor}
       />
       <ModelLibrary 
         isOpen={isLibraryOpen}

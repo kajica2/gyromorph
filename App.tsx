@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ImageUploader from './components/ImageUploader';
 import DistortionView from './components/DistortionView';
 import FriendOverlay from './components/FriendOverlay';
+import Scene3D from './components/Scene3D';
 import { useGyroscope } from './hooks/useGyroscope';
 import { useRealtimeFriends } from './hooks/useRealtimeFriends';
 import { analyzeImage } from './services/geminiService';
@@ -90,6 +91,7 @@ const App: React.FC = () => {
   
   return (
     <>
+      <Scene3D />
       <FriendOverlay friends={friends} me={me} />
       
       {imageSrc && analysis ? (

@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+/* Custom utilities for smooth animations */
+body {
+  overscroll-behavior: none;
+  background-color: #000;
+  color: #fff;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

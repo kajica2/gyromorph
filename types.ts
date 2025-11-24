@@ -20,12 +20,3 @@ export interface AnalysisResult {
   distortionType: 'liquid' | 'glitch' | 'pixelate' | 'warp';
   colorHex: string;
 }
-
-export interface Friend {
-  id: string;
-  username: string;
-  emoji: string;
-  color: string;
-  lastActive: number;
-  status: 'idle' | 'morphing' | 'scanning';
-}

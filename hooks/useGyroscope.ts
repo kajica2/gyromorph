@@ -10,7 +10,7 @@ export const useGyroscope = () => {
   // Refs for raw data and timing to be used inside the animation loop
   const rawDataRef = useRef<GyroData>({ alpha: 0, beta: 0, gamma: 0 });
   const lastMoveTimeRef = useRef<number>(Date.now());
-  const rafRef = useRef<number>();
+  const rafRef = useRef<number>(0);
 
   const handleOrientation = useCallback((event: DeviceOrientationEvent) => {
     const alpha = event.alpha || 0;
